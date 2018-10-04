@@ -11,14 +11,13 @@ functions. Other metadata standards can be
 conceptualized and added to the Concepts Evaluator. Then the module can be
 rebuilt and the recommendations analysis functions can be run anew.
 
-The basic workflow is to retrieve records, evaluate for concept and xpath content,
-run concept/xpath counts and occurrence functions on csv output of evaluation,
-create collectionspreadsheet with the outputs, if you want to compare between
-collections, combine csv outputs with appropriate combination functions, create
-organizationSpreadsheet. Finally run WriteGoogleSheets on any xlsx outputs
-you want to share.
+The basic workflow is to retrieve records, evaluate for concept and xpath
+content, run concept/xpath counts and occurrence functions on csv output of 
+evaluation,create collectionspreadsheet with the outputs, if you want to
+compare between collections, combine csv outputs with appropriate combination
+functions, create organizationSpreadsheet. Finally run WriteGoogleSheets on 
+any xlsx outputs you want to share.
 """
-
 
 import pandas as pd
 import csv
@@ -138,6 +137,50 @@ def XMLeval(MetadataLocation, Organization, Collection, Dialect):
 
 # Create a Recommendations Analysis data table
 
+def recommendationEval(ConceptDF, RecommendationChoice):
+    """
+    Apply a RecommendationChoice to a ConceptDF to create recommendation
+    specific reports instead of all contained concepts.
+    RecommendationChoices: 'schema.org - Google Dataset Discovery ',
+    'Metadata 2020 P5 Concept List', 'CodeMeta_Software Citation', 'FORCE11',
+    'ESIP Data Citation', 'CSW_Discovery', 'ISO-1_Discovery',
+    'LTER_Completeness', 'FGDC_Discovery', 'JATS for Reuse - Citations',
+    'DCAT_Discovery', 'ECS_Discovery', 'ECHO_Discovery', 'ISO-1_Access',
+    'ACDD_Use', 'SERF_Access', 'ISO_Lineage_Understanding',
+    'ISO_Quality_Understanding', 'ISO_Reference_Understanding',
+    'ISO_UserFeedback_Understanding', 'ACDD_Discovery', 'CMR-Collection', 
+    'CMR-Common', 'CMR-Granule', 'UMM-Variable', 'UMM-Collection',
+    'UMM-Common', 'UMM-Granule', 'DataCite_Discovery', 'DataCite4_Discovery',
+    'FGDC_Understanding', 'JATS for Reuse Dates', 'JATS for Reuse Authors',
+    'JATS for Reuse Data', 'Dryad-Package', 'Dryad-File', 'IEDA_Discovery',
+    'HCLS-Summary_Discovery', 'HCLS-Version_Discovery',
+    'HCLS-Distribution_Discovery', 'WSDL_Access', 'DIF_Discovery'
+    """
+    # import recTags
+    RecommendationsDF = pd.read_csv('./RecTag.csv')
+
+    # create list of concepts included in the RecommendationChoice
+    RecommendationList = (RecommendationsDF[
+        RecommendationsDF[
+            'Recommendation'] == RecommendationChoice]).values.tolist()[0]
+    '''
+    Remove the blanks that exist because of pulling an variable column csv
+    into a dataframe
+    '''
+    RecommendationList = [x for x in RecommendationList if str(x) != 'nan']
+    # the RecommendationChoice is not a concept name, so remove it from list
+    del RecommendationList[0]
+
+    ''' remove rows that do not contain
+    a Concept name that is contained in Recommendation
+    '''
+    RecommendationConceptsDF = (
+        ConceptDF.loc[ConceptDF['Concept'].isin(
+            RecommendationList
+        )])
+
+    return(RecommendationConceptsDF)
+
 
 def conceptCounts(EvaluatedMetadataDF, Organization, Collection,
                   Dialect, DataDestination):
@@ -156,7 +199,7 @@ def conceptCounts(EvaluatedMetadataDF, Organization, Collection,
     occurrenceMatrix.columns.names = ['']
     occurrenceMatrix = pd.concat(
         [dialectOccurrenceDF, occurrenceMatrix],
-        axis=0, ignore_index=True, #sort=True
+        axis=0, ignore_index=True, sort=True
     )
     mid = occurrenceMatrix['Collection']
     mid2 = occurrenceMatrix['Record']
